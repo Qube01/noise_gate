@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from audio_utils import load_audio
 from noise_gate.utils import compute_envelope, apply_noise_gate, db_to_linear
+from pathlib import Path
 
 
 def test_apply_noise_gate_noise_removed(tmp_path):
@@ -35,7 +36,7 @@ def test_apply_noise_gate_noise_removed(tmp_path):
     )
     gated = apply_noise_gate(signal, env, db_to_linear(floor_db), False)
 
-    out_path = tmp_path / 'gated_noise_voice.wav'
+    out_path = Path(tmp_path) / 'gated_noise_voice.wav'
     wavfile.write(out_path, fs, np.int16(gated * 32767))
 
     before_noise = np.max(np.abs(signal[:noise_samples]))
@@ -64,7 +65,7 @@ def test_apply_noise_gate_full_silence(tmp_path):
     )
     gated = apply_noise_gate(data, env, db_to_linear(floor_db), False)
 
-    out_path = tmp_path / 'gated_silence.wav'
+    out_path = Path(tmp_path) / 'gated_silence.wav'
     wavfile.write(out_path, fs, np.int16(gated * 32767))
 
     assert np.max(np.abs(gated)) < db_to_linear(-99)

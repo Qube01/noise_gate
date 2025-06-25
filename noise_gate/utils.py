@@ -24,6 +24,7 @@ def compute_envelope(
     hold_ms: float,
     decay_ms: float,
     silence_flag: bool = False,
+    stereo_link: bool = True,
 ) -> list:
     """Return a gate envelope for ``signal``.
 
@@ -49,6 +50,10 @@ def compute_envelope(
         to ``floor_db`` after the hold period.
     silence_flag : bool, optional
         If ``True`` the initial gain starts at ``floor`` instead of ``1``.
+    stereo_link : bool, optional
+        If ``True`` (default), a single envelope is computed from the maximum
+        absolute value across channels. If ``False``, each channel is processed
+        independently and a multi-channel envelope is returned.
 
     Returns
     -------
@@ -60,10 +65,13 @@ def compute_envelope(
 
     signal = np.asarray(signal, dtype=float)
 
-    if signal.ndim > 1:
-        follower = np.max(np.abs(signal), axis=1)
+    if signal.ndim == 1:
+        followers = [np.abs(signal)]
     else:
-        follower = np.abs(signal)
+        if stereo_link:
+            followers = [np.max(np.abs(signal), axis=1)]
+        else:
+            followers = [np.abs(signal[:, ch]) for ch in range(signal.shape[1])]
 
     threshold = db_to_linear(threshold_db)
     floor = db_to_linear(floor_db)
@@ -72,34 +80,42 @@ def compute_envelope(
     hold_samples = int(max(hold_ms, 0) * sample_rate / 1000)
     decay_samples = int(max(decay_ms, 0) * sample_rate / 1000)
 
-    if attack_samples > 0:
-        pad = np.full(attack_samples, follower[-1], dtype=float)
-        follower = np.concatenate([follower[attack_samples:], pad])
-
     if decay_samples > 0:
         decay_coeff = floor ** (1.0 / decay_samples)
     else:
         decay_coeff = floor
 
-    env = np.empty(len(follower), dtype=float)
-    gain = 1.0 if not silence_flag else floor
-    hold_counter = 0
+    def process(follower):
+        if attack_samples > 0:
+            pad = np.full(attack_samples, follower[-1], dtype=float)
+            follower = np.concatenate([follower[attack_samples:], pad])
 
-    for i, amp in enumerate(follower):
-        if amp >= threshold:
-            gain = 1.0
-            hold_counter = hold_samples
-        else:
-            if hold_counter > 0:
-                hold_counter -= 1
+        env = np.empty(len(follower), dtype=float)
+        gain = 1.0 if not silence_flag else floor
+        hold_counter = 0
+
+        for i, amp in enumerate(follower):
+            if amp >= threshold:
                 gain = 1.0
+                hold_counter = hold_samples
             else:
-                gain *= decay_coeff
-                if gain < floor:
-                    gain = floor
-        env[i] = gain
+                if hold_counter > 0:
+                    hold_counter -= 1
+                    gain = 1.0
+                else:
+                    gain *= decay_coeff
+                    if gain < floor:
+                        gain = floor
+            env[i] = gain
 
-    return env.tolist()
+        return env
+
+    envs = [process(f) for f in followers]
+
+    if len(envs) == 1:
+        return envs[0].tolist()
+    else:
+        return np.stack(envs, axis=1).tolist()
 
 
 def apply_noise_gate(signal, envelope, floor, silence_flag):

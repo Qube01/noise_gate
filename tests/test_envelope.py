@@ -61,3 +61,54 @@ def test_lookahead_and_hold_decay():
     # After hold period, gain decays toward floor within 10 ms
     floor = db_to_linear(-60)
     assert env[60] <= floor + 1e-6
+
+
+def test_envelope_stereo_link_true():
+    fs = 1000
+    sig = np.array([
+        [0.5, 0.1],
+        [0.6, 0.2],
+        [-0.7, -0.8],
+        [0.2, -0.1],
+    ])
+    env = compute_envelope(
+        sig,
+        fs,
+        threshold_db=-6,
+        floor_db=-60,
+        attack_ms=0,
+        hold_ms=0,
+        decay_ms=0,
+        stereo_link=True,
+    )
+    floor = db_to_linear(-60)
+    expected = [floor, 1.0, 1.0, floor]
+    assert np.allclose(env, expected)
+
+
+def test_envelope_stereo_link_false():
+    fs = 1000
+    sig = np.array([
+        [0.5, 0.1],
+        [0.6, 0.2],
+        [-0.7, -0.8],
+        [0.2, -0.1],
+    ])
+    env = compute_envelope(
+        sig,
+        fs,
+        threshold_db=-6,
+        floor_db=-60,
+        attack_ms=0,
+        hold_ms=0,
+        decay_ms=0,
+        stereo_link=False,
+    )
+    floor = db_to_linear(-60)
+    expected = np.array([
+        [floor, floor],
+        [1.0, floor],
+        [1.0, 1.0],
+        [floor, floor],
+    ])
+    assert np.allclose(env, expected)
