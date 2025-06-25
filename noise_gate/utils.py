@@ -100,3 +100,50 @@ def compute_envelope(
         env[i] = gain
 
     return env.tolist()
+
+
+def apply_noise_gate(signal, envelope, floor, silence_flag):
+    """Apply a gain envelope to a signal.
+
+    Parameters
+    ----------
+    signal : numpy.ndarray or sequence of floats
+        Input signal. Can be mono ``(n_samples,)`` or multi-channel
+        ``(n_samples, n_channels)``.
+    envelope : sequence of float
+        Gain values produced by :func:`compute_envelope`.
+    floor : float
+        Minimum gain value (linear) when the gate is fully closed.
+    silence_flag : bool
+        If ``True`` the output gain starts at ``floor`` instead of ``1``.
+
+    Returns
+    -------
+    numpy.ndarray
+        The gated signal with the same shape as ``signal``.
+    """
+
+    import numpy as np
+    from audio_utils import highpass8, lowpass8
+
+    # Defaults for optional global parameters
+    gate_freq = globals().get("GATE_FREQ", 0.0)
+    sample_rate = globals().get("SAMPLE_RATE", 44100)
+
+    signal = np.asarray(signal, dtype=float)
+    env = np.asarray(envelope, dtype=float)
+    gain = 1.0 if not silence_flag else floor
+
+    if env.ndim == 1 and signal.ndim > 1:
+        env = env[:, None]
+
+    if gate_freq > 20:
+        hp = highpass8(signal, gate_freq, sample_rate)
+        lp = lowpass8(signal, gate_freq, sample_rate)
+        gated_hp = hp * env
+        output = gated_hp + lp
+    else:
+        output = signal * env
+
+    output *= gain
+    return output
