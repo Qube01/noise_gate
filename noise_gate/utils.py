@@ -163,3 +163,66 @@ def apply_noise_gate(signal, envelope, floor, silence_flag):
 
     output *= gain
     return output
+
+
+def process_file(path_in, path_out, params_dict):
+    """Apply a noise gate to an audio file and save the result.
+
+    Parameters
+    ----------
+    path_in : str or Path
+        Input audio file (WAV format).
+    path_out : str or Path
+        Destination path for the gated audio.
+    params_dict : dict
+        Dictionary containing gate parameters:
+
+        - ``THRESHOLD`` (float): Threshold in dB.
+        - ``LEVEL-REDUCTION`` (float): Amount of reduction in dB when the gate
+          is closed. Positive values represent attenuation.
+        - ``ATTACK`` (float): Attack/lookahead time in ms.
+        - ``HOLD`` (float): Hold time in ms.
+        - ``DECAY`` (float): Decay time in ms.
+        - ``GATE-FREQ`` (float): Crossover frequency in kHz.
+        - ``STEREO_LINK`` (bool): Process channels together if ``True``.
+        - ``SILENCE_FLAG`` (bool): Start with gain at the floor if ``True``.
+
+    The processed audio is written to ``path_out``.
+    """
+
+    from audio_utils import load_audio, save_audio
+
+    signal, fs = load_audio(path_in)
+
+    threshold = float(params_dict.get("THRESHOLD", -40.0))
+    level_red = float(params_dict.get("LEVEL-REDUCTION", 80.0))
+    attack = float(params_dict.get("ATTACK", 0.0))
+    hold = float(params_dict.get("HOLD", 0.0))
+    decay = float(params_dict.get("DECAY", 0.0))
+    gate_freq_khz = float(params_dict.get("GATE-FREQ", 0.0))
+    stereo_link = bool(params_dict.get("STEREO_LINK", True))
+    silence_flag = bool(params_dict.get("SILENCE_FLAG", False))
+
+    floor_db = -abs(level_red) if level_red > 0 else level_red
+
+    env = compute_envelope(
+        signal,
+        fs,
+        threshold_db=threshold,
+        floor_db=floor_db,
+        attack_ms=attack,
+        hold_ms=hold,
+        decay_ms=decay,
+        silence_flag=silence_flag,
+        stereo_link=stereo_link,
+    )
+
+    global GATE_FREQ, SAMPLE_RATE
+    GATE_FREQ = gate_freq_khz * 1000.0
+    SAMPLE_RATE = fs
+
+    gated = apply_noise_gate(signal, env, db_to_linear(floor_db), silence_flag)
+
+    save_audio(path_out, gated, fs)
+
+    return gated
