@@ -1,0 +1,42 @@
+import numpy as np
+from scipy.io import wavfile
+
+
+def load_audio(path):
+    """Load a mono or stereo WAV file.
+
+    Parameters
+    ----------
+    path : str or Path
+        Path to the WAV file.
+
+    Returns
+    -------
+    data : numpy.ndarray of dtype float32
+        Audio samples normalized to [-1.0, 1.0]. If the file contains
+        two channels, the shape is (n_samples, 2).
+    sample_rate : int
+        Sampling frequency of the audio file.
+    """
+    sample_rate, data = wavfile.read(path)
+    dtype = data.dtype
+
+    # Convert to float32
+    data = np.asarray(data, dtype=np.float32)
+
+    if np.issubdtype(dtype, np.integer):
+        max_val = float(np.iinfo(dtype).max)
+        if dtype == np.int16:
+            max_val = 32768.0
+        elif dtype == np.int32:
+            max_val = 2147483648.0
+        elif dtype == np.uint8:
+            data = data - 128.0
+            max_val = 128.0
+        data /= max_val
+    else:
+        max_abs = np.max(np.abs(data))
+        if max_abs > 1.0:
+            data /= max_abs
+
+    return data, sample_rate
