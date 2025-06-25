@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.io import wavfile
+from scipy.signal import butter, lfilter
 
 
 def load_audio(path):
@@ -40,3 +41,41 @@ def load_audio(path):
             data /= max_abs
 
     return data, sample_rate
+
+
+def butter_filter(signal, cutoff_freq_hz, fs, type):
+    """Apply a Butterworth filter to a signal.
+
+    Parameters
+    ----------
+    signal : numpy.ndarray
+        Input signal. Can be mono ``(n_samples,)`` or multi-channel
+        ``(n_samples, n_channels)``. Filtering is done along the first
+        axis.
+    cutoff_freq_hz : float or sequence of float
+        Cutoff frequency/frequencies in Hertz.
+    fs : int or float
+        Sampling rate of ``signal``.
+    type : {'low', 'high', 'bandpass', 'bandstop'}
+        Type of Butterworth filter to apply.
+
+    Returns
+    -------
+    numpy.ndarray
+        Filtered signal with the same shape as ``signal``.
+    """
+
+    nyq = 0.5 * fs
+    normal_cutoff = np.asarray(cutoff_freq_hz, dtype=float) / nyq
+    b, a = butter(8, normal_cutoff, btype=type)
+    return lfilter(b, a, signal, axis=0)
+
+
+def lowpass8(signal, cutoff_freq_hz, fs):
+    """8th-order low-pass Butterworth filter."""
+    return butter_filter(signal, cutoff_freq_hz, fs, "low")
+
+
+def highpass8(signal, cutoff_freq_hz, fs):
+    """8th-order high-pass Butterworth filter."""
+    return butter_filter(signal, cutoff_freq_hz, fs, "high")
