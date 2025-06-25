@@ -5,7 +5,7 @@ import sys
 # Ensure the project root is on the import path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from audio_utils import butter_filter, lowpass8, highpass8
+from audio_utils import butter_filter, lowpass8, highpass8, load_audio, save_audio
 
 
 def amplitude_at(signal, freq, fs):
@@ -83,3 +83,15 @@ def test_butter_filter_lowpass_fft():
 
     assert amp_low_after / amp_low_before > 0.8
     assert amp_high_after / amp_high_before < 0.1
+
+
+def test_save_audio_roundtrip(tmp_path):
+    fs = 8000
+    signal = np.array([0.0, 0.5, -0.5, 1.0, -1.0], dtype=float)
+    out_file = tmp_path / "test.wav"
+
+    save_audio(out_file, signal, fs)
+    loaded, sr = load_audio(out_file)
+
+    assert sr == fs
+    assert np.allclose(loaded, signal, atol=1e-4)

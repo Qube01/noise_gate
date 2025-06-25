@@ -79,3 +79,22 @@ def lowpass8(signal, cutoff_freq_hz, fs):
 def highpass8(signal, cutoff_freq_hz, fs):
     """8th-order high-pass Butterworth filter."""
     return butter_filter(signal, cutoff_freq_hz, fs, "high")
+
+
+def save_audio(path, signal, sample_rate):
+    """Save a floating point signal to a WAV file.
+
+    Parameters
+    ----------
+    path : str or Path
+        Destination file path.
+    signal : numpy.ndarray or sequence of float
+        Audio data with values typically in ``[-1.0, 1.0]``.
+    sample_rate : int
+        Sampling rate of ``signal`` in Hertz.
+    """
+
+    data = np.asarray(signal, dtype=np.float32)
+    data = np.clip(data, -1.0, 1.0)
+    data_int16 = np.int16(data * 32767)
+    wavfile.write(path, sample_rate, data_int16)
