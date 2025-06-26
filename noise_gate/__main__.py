@@ -1,5 +1,5 @@
 import argparse
-from noise_gate.utils import process_file
+from .utils import process_file
 
 
 def parse_args():

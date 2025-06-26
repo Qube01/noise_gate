@@ -5,7 +5,13 @@ import sys
 # Ensure the project root is on the import path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from audio_utils import butter_filter, lowpass8, highpass8, load_audio, save_audio
+from noise_gate.audio_utils import (
+    butter_filter,
+    lowpass8,
+    highpass8,
+    load_audio,
+    save_audio,
+)
 
 
 def amplitude_at(signal, freq, fs):

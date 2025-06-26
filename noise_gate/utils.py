@@ -140,7 +140,7 @@ def apply_noise_gate(signal, envelope, floor, silence_flag):
     """
 
     import numpy as np
-    from audio_utils import highpass8, lowpass8
+    from .audio_utils import highpass8, lowpass8
 
     # Defaults for optional global parameters
     gate_freq = globals().get("GATE_FREQ", 0.0)
@@ -190,7 +190,7 @@ def process_file(path_in, path_out, params_dict):
     The processed audio is written to ``path_out``.
     """
 
-    from audio_utils import load_audio, save_audio
+    from .audio_utils import load_audio, save_audio
 
     signal, fs = load_audio(path_in)
 

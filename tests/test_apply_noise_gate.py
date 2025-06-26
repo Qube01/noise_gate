@@ -6,7 +6,7 @@ from scipy.io import wavfile
 # Ensure the project root is on the import path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from audio_utils import load_audio
+from noise_gate.audio_utils import load_audio
 from noise_gate.utils import compute_envelope, apply_noise_gate, db_to_linear
 from pathlib import Path
 

@@ -7,7 +7,7 @@ After installing the required dependencies, you can apply the gate from the
 command line:
 
 ```bash
-python noise_gate.py -i input.wav -o output.wav [options]
+python -m noise_gate -i input.wav -o output.wav [options]
 ```
 
 Available options:
